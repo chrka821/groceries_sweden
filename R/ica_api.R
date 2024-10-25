@@ -11,14 +11,16 @@ Product <- R6Class(
     price_per_unit = NULL,
     size = NULL,
     category_path = NULL,
+    image_path = NULL,
     
-    initialize = function( name, brand, price, price_per_unit, size, category_path) {
+    initialize = function( name, brand, price, price_per_unit, size, category_path, image_path) {
       self$price <- price
       self$brand <- brand
       self$name <- name
       self$price_per_unit <- price_per_unit
       self$size <- size
       self$category_path <- category_path
+      self$image_path <- image_path
     }
   )
 )
@@ -72,7 +74,8 @@ ICA_API_Handler <- R6Class(
       }
       
       json_products <- data$entities$product
-      self$parse_products(json_products)
+      products <- self$parse_products(json_products)
+      return(products)
     },
     
     parse_products = function(json_products) {
@@ -83,24 +86,21 @@ ICA_API_Handler <- R6Class(
           size <- json_product$size$value
           price_per_unit <- json_product$price$unit$current$amount
           category_path <- json_product$categoryPath
-          product <- Product$new(name, brand, price, size, price_per_unit, category_path)
+          image_path <- json_product$image$src
+          product <- Product$new(name = name, 
+                                 brand = brand,
+                                 price = price,
+                                 price_per_unit = price_per_unit,
+                                 size=size, 
+                                 category_path = category_path, 
+                                 image_path =image_path)
           return (product)
       }
       
-      products = list()
-      for (json_product in json_products){
-        product <- parse_product(json_product)
-        products <- append(products, product)
-      }
-      print(products)
+      products <- lapply(json_products, parse_product)
+      return(products)
     }
     
     
   )
 )
-
-
-
-
-my_ica_handler = ICA_API_Handler$new()
-my_ica_handler$search_product("broccoli")
