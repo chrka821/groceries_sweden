@@ -1,6 +1,7 @@
 library(httr)
 library(R6)
 library(jsonlite)
+library(stringr)
 
 Product <- R6Class(
   "product",
@@ -82,9 +83,12 @@ ICA_API_Handler <- R6Class(
       parse_product <- function(json_product){
           name <- json_product$name
           brand <- json_product$brand
-          price <- json_product$price$current$amount
-          size <- json_product$size$value
-          price_per_unit <- json_product$price$unit$current$amount
+          price <- as.numeric(json_product$price$current$amount)
+          size_str <- json_product$size$value
+          size_value <- as.numeric(str_extract(size_str, "^\\d+\\.?\\d*")) # Extract value
+          size_unit <- str_extract(size_str, "[a-zA-Z]+$") # Extract unit
+          size = list(value=size_value, unit=size_unit)
+          price_per_unit <- as.numeric(json_product$price$unit$current$amount)
           category_path <- json_product$categoryPath
           image_path <- json_product$image$src
           product <- Product$new(name = name, 
@@ -98,6 +102,7 @@ ICA_API_Handler <- R6Class(
       }
       
       products <- lapply(json_products, parse_product)
+      products <- Filter(function(product) !is.null(product$size), products)
       return(products)
     }
     

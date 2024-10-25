@@ -1,5 +1,6 @@
 library(shiny)
 library(jsonlite)
+library(stringr)
 
 server <- function(input, output, session) {
   
@@ -90,18 +91,25 @@ server <- function(input, output, session) {
   update_product_grid <- function() {
     output$product_grid <- renderUI({
       req(selected_ingredient())
-
       ingredient_products <- products()[[trimws(selected_ingredient())]]
-      
-      # Display products in a grid layout, applied for each
+      ingredient_required_quantity <- ingredients()$quantity[ingredients()$name == selected_ingredient()]
+      # Display products in a grid layout
       div(class = "grid", lapply(ingredient_products, function(product) {
+        
+        # Calculate how many units of the product are needed
+        units_required <- ceiling(ingredient_required_quantity / product$size$value)
+        
+        # Calculate the price for the recipe
+        price_for_recipe <- product$price * units_required
+        
         div(class = "product-item",
             tags$img(src = product$image_path, height = "100px"),
             h5(product$name),
             p(paste("Märke:", product$brand)),
             p(paste("Pris:", product$price, "SEK")),
             p(paste("Pris per enhet:", product$price_per_unit)),
-            p(paste("Storlek:", product$size))
+            p(paste("Storlek:", product$size$value, product$size$unit)),
+            p(paste("För recept: ", units_required, "x", product$size$value, product$size$unit, " = ", price_for_recipe, "SEK"))
         )
       }))
     })
